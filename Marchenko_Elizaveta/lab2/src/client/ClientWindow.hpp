@@ -45,8 +45,6 @@ public:
         startNewTurn();
     }
 
-
-
     void onTimeout() const;           // Обработчик тайм-аута
 
     void startNewTurn() const {

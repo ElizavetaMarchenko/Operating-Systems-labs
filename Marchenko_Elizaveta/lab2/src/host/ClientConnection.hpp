@@ -5,6 +5,7 @@
 #include <semaphore.h>
 #include <fcntl.h>
 #include "../config.hpp"
+#include <csignal>
 using namespace config;
 
 template <class T>
@@ -22,8 +23,8 @@ public:
 
         std::cerr<<"local sem path"<<std::endl;
         client_name = "Client" + std::to_string(pid);
-        fromClientToHost = T(host_pid, pid, true);
-        fromHostToClient = T(pid, host_pid, true);
+        fromClientToHost = T(pid, host_pid, true);
+        fromHostToClient = T(host_pid, pid, true);
         // освобождаем семафор
         sem_post(semaphore);
         std::cerr<<"post local sem"<<std::endl;
@@ -37,13 +38,16 @@ public:
     void send_client_status(const bool client_status) {
         std::string str_status = client_status ? "1" : "0";
         fromHostToClient.Write(str_status);
-        //сигнал
+        kill(pid, SIGUSR1);
     }
 
     void send_game_status(const bool game_status) {
+        std::cerr<<"send_game_status"<<std::endl;
+        std::cerr<<"client_pid " << pid<<std::endl;
         std::string str_status = game_status ? "1" : "0";
+        std::cerr<<"game status "<<str_status<<std::endl;
         fromHostToClient.Write(str_status);
-        //сигнал
+        kill(pid, SIGUSR2);
     }
 
     std::string getName() {

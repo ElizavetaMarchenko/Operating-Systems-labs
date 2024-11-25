@@ -11,7 +11,7 @@ conn_seg::conn_seg(int fromPid, int toPid, bool isHost) {
 
     int f = _isHost ? IPC_CREAT | O_EXCL | 0666 : 0666;
 
-    std::string name = create_path(toPid, fromPid) + "seg";
+    std::string name = "/" + create_path(toPid, fromPid) + "seg";
     key_t key = ftok(name.c_str(), f);
     _shmid = shmget(key, 1024, f);
     if (_shmid == -1)

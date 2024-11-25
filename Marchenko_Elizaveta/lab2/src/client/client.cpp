@@ -30,16 +30,20 @@ void client_signal_handler(const int sig, siginfo_t *info, void *context){
     {
         case SIGUSR2:
             client.read_game_status(status);
-            if (std::stoi(status) == 1) {
+            std::cerr<<"Sig2: "<<status<<std::endl;
+            if (!status.empty() && status[0] == '1') {
+                std::cerr<<"Start new turn"<<std::endl;
                 window_ptr->startNewTurn();
             }
             else {
+                delete window_ptr;
                 exit(0);
             }
             status.clear();
         break;
         case SIGUSR1:
             sem_post(client.game_sem);
+            std::cerr<<"sem_post"<<std::endl;
             client.read_life_status(status);
             window_ptr->updateStatus(client.getStatus());
             status.clear();
@@ -50,8 +54,16 @@ void client_signal_handler(const int sig, siginfo_t *info, void *context){
  }
 
 void ClientWindow::onSendButtonClicked() const {
+    turnTimer->stop();
     std::cout<<"ClientWindow::SendButtonClicked"<<std::endl;
-    QString chosenNumber = inputField->text().isEmpty() ? "—" : inputField->text();
+
+    QString chosenNumber = inputField->text();
+    std::string number = chosenNumber.toStdString();
+    int len = number.length();
+    if (!isdigit(static_cast<unsigned char>(number[len]))) {
+        onTimeout();
+        return;
+    }
     chosenNumberLabel->setText("Выбранное число: " + chosenNumber);
     client.send_move_to_host(chosenNumber.toStdString());
     sendButton->setEnabled(false);
@@ -60,9 +72,12 @@ void ClientWindow::onSendButtonClicked() const {
 }
 
 void ClientWindow::onTimeout() const {
+    turnTimer->stop();
     std::cout<<"ClientWindow::onTimeout"<<std::endl;
-    chosenNumberLabel->setText("Выбранное число: —");
-    client.send_move_to_host("");
+    const int m = std::rand() % 100 ? client.status : 50 + 1;
+    std::string move = std::to_string(m);
+    chosenNumberLabel->setText(("Выбранное число: " + move).data());
+    client.send_move_to_host(move);
     sendButton->setEnabled(false);
     inputField->setEnabled(false);
 }

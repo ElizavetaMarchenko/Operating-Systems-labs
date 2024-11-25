@@ -37,8 +37,11 @@ void host_signal_handler(const int sig, siginfo_t *info, void *context)
         case SIGUSR1: {
             host.connects[info->si_pid].read_client_move(client_move);
             syslog(LOG_NOTICE, "client's pid = %d move: %s", info->si_pid, client_move.c_str());
+
             const bool client_status = host.is_goatling_alife(info->si_pid, client_move);
+            std::cerr<<"client's pid = %d status: "<<client_status<<std::endl;
             host.connects[info->si_pid].send_client_status(client_status);
+
             window_ptr -> updateClientStatus(QString::fromStdString(host.connects[info->si_pid].getName()), client_status);
             window_ptr -> updateClientNumber(QString::fromStdString(host.connects[info->si_pid].getName()), QString::fromStdString(client_move));
             client_move.clear();

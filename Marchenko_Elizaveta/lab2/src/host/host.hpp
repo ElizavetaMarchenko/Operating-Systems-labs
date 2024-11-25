@@ -63,8 +63,8 @@ class Host {
             throw std::runtime_error("Failed to register signal handler");
         }
 
-        game_sem = sem_open((std::to_string(pid) + "_game").c_str(), O_CREAT, 1);
-
+        game_sem = sem_open((std::to_string(pid) + "_game").c_str(), O_CREAT, 0777, 1);
+        std::cerr<<"open game sem " << (std::to_string(pid) + "_game") << std::endl;
         choose_wolf_number();
     }
 
@@ -107,6 +107,7 @@ class Host {
 
     bool check_if_it_end_of_turn() {
         std::cerr<<"check_if_it_end_of_turn"<<std::endl;
+        std::cerr<<number_of_made_move_clients<<' '<<status.size()<<std::endl;
         if (number_of_made_move_clients == status.size()) {
             // Это конец хода
             // Блокируем семафор
@@ -128,6 +129,7 @@ class Host {
             }
             number_of_made_move_clients = 0;
 
+            std::cerr<<"game_status "<<game_continue<<std::endl;
             for (auto [client_pid, _]: last_move) {
                 connects[client_pid].send_game_status(game_continue);
             }
@@ -174,6 +176,7 @@ class Host {
             return true;
         }
         status[goatling_pid] = false;
+        number_of_dead_clients++;
         return false;
     }
 

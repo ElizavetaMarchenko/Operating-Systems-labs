@@ -19,7 +19,7 @@ template <typename T>
 class Client {
     sem_t* global_semaphore;
     T fromClientToHost;
-    T toClientFromHost;
+    T fromHostToClient;
     int host_pid, pid;
     bool status;
     struct sigaction signal_handler{};
@@ -45,6 +45,7 @@ class Client {
         syslog(LOG_NOTICE, "Server PID: %d", host_pid);
 
         pid = getpid();
+        std::cerr<<"Client PID: "<<pid<<std::endl;
         syslog(LOG_NOTICE, "Client PID: %d", pid);
 
         signal_handler.sa_sigaction = client_signal_handler;
@@ -84,12 +85,17 @@ class Client {
         }
 
         fromClientToHost = T(pid, host_pid, false);
-        toClientFromHost = T(pid, host_pid, false);
+        fromHostToClient = T(host_pid, pid, false);
         // отсоединяем мелкий семафор
         sem_unlink((create_path(host_pid, pid) + "_init").c_str());
         std::cerr<<"unlink local sem"<<std::endl;
 
-        game_sem = sem_open((std::to_string(host_pid) + "_game").c_str(), O_RDWR, 1);
+        game_sem = sem_open((std::to_string(host_pid) + "_game").c_str(), O_RDWR, 0777);
+        std::cerr<<"open game sem " << (std::to_string(host_pid) + "_game") << std::endl;
+        int sem_v;
+        std::cerr<<"try to get value"<<std::endl;
+        sem_getvalue(game_sem, &sem_v);
+        std::cerr<<"sem_v: "<<sem_v<<std::endl;
     }
 
     void block_sem() const {
@@ -117,26 +123,18 @@ class Client {
     void send_move_to_host(const std::string& move){
           syslog(LOG_INFO, "Sending move to host. Move: %s.", move.c_str());
           std::cerr<<"Sending move to host. Move: "<<move<<std::endl;
-          try {
-              std::stoi(move);
-              block_sem();
-              fromClientToHost.Write(move);
-              kill(host_pid, SIGUSR1);
-          }
-          catch (...){
-              const int m = std::rand() % 100 ? status : 50 + 1;
-              block_sem();
-              fromClientToHost.Write(std::to_string(m));
-              kill(host_pid, SIGUSR1);
-          }
+
+          block_sem();
+          fromClientToHost.Write(move);
+          kill(host_pid, SIGUSR1);
     }
 
     void read_game_status(std::string& st){
-          toClientFromHost.Read(st);
+          fromHostToClient.Read(st);
     }
     void read_life_status(std::string& st) {
-        toClientFromHost.Read(st);
-        if (std::stoi(st) == 1) {
+        fromHostToClient.Read(st);
+        if (static_cast<int>(st[0]) == 1) {
             status = true;
         }
         else {

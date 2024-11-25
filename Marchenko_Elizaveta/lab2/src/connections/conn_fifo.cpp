@@ -19,7 +19,7 @@ using namespace config;
 
 conn_fifo::conn_fifo(int fromPid, int toPid, bool isHost) {
     _isHost = isHost;
-    _fifoName = create_path(fromPid, toPid) + "fifo";
+    _fifoName = "/" + create_path(fromPid, toPid) + "fifo";
 
     if (_isHost)
         if (mkfifo(_fifoName.c_str(), 0666))
