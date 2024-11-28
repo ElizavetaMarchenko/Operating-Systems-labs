@@ -59,6 +59,10 @@ public:
         }
     }
 
+    void updateDeathCount(const unsigned int &count) {
+        deadCountLabel->setText("Ходов, пока все мертвы: " + QString::number(count));
+    }
+
     void deleteClient(const QString &name) {
         if (clients.contains(name)) {
             clients.erase(name);

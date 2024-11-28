@@ -6,17 +6,19 @@
 #include <fcntl.h>
 #include "../config.hpp"
 #include <csignal>
+#include <vector>
+
 using namespace config;
 
 template <class T>
 class ClientConnection{
-    T fromHostToClient;
     T fromClientToHost;
+    T fromHostToClient;
+
     int host_pid{}, pid{};
     std::string client_name;
 public:
     ClientConnection(int host_pid, int pid) : host_pid(host_pid), pid(pid){
-        // пляски с семафором
         sem_t* semaphore = sem_open((create_path(host_pid, pid) + "_init").c_str(), O_CREAT, 0777, 0);
         if (semaphore == SEM_FAILED)
             throw std::runtime_error("Error to create a semaphore!");
@@ -29,7 +31,13 @@ public:
         sem_post(semaphore);
         std::cerr<<"post local sem"<<std::endl;
     }
+
     ClientConnection() = default;
+    ClientConnection(const ClientConnection&) = default;
+    ClientConnection& operator = (const ClientConnection&) = default;
+    ClientConnection(ClientConnection &&) = default;
+    ClientConnection &operator=(ClientConnection &&) = default;
+
 
     void read_client_move(std::string & string) {
         fromClientToHost.Read(string);
@@ -56,5 +64,6 @@ public:
 
     ~ClientConnection() {
         syslog(LOG_INFO, "Close connection with client %s", client_name.c_str());
+        std::cerr<<"~ClientConnection"<<std::endl;
     }
 };

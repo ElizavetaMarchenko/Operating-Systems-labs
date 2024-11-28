@@ -23,7 +23,7 @@ void host_signal_handler(const int sig, siginfo_t *info, void *context)
         return;
     if (!host.connects.contains(info->si_pid))
     {
-        host.connects.emplace(info->si_pid, ClientConnection<ConnType>(getpid(), info->si_pid));
+        host.connects.emplace(info->si_pid, ClientConnection<ConnType>{getpid(), info->si_pid});
         if (host.connects.size() == 1) {
             window_ptr -> setHostNumber(host.wolf_number);
         }
@@ -47,6 +47,7 @@ void host_signal_handler(const int sig, siginfo_t *info, void *context)
             client_move.clear();
             if (host.check_if_it_end_of_turn()) {
                 window_ptr -> setHostNumber(host.wolf_number);
+                window_ptr -> updateDeathCount(host.number_varies_when_everyone_dead);
             };
             break;
         }

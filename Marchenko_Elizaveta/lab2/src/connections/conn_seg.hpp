@@ -21,6 +21,7 @@ private:
     bool _isHost;
     void *_segptr = nullptr;
     int _shmid = -1;
+    std::string name;
 };
 
 

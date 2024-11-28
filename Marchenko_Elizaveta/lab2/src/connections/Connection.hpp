@@ -9,9 +9,5 @@ public:
     virtual ~Connection() = default;
 
     Connection() = default;
-    Connection(const Connection &) = default;
-    Connection &operator=(const Connection &) = default;
-    Connection(Connection &&) = default;
-    Connection &operator=(Connection &&) = default;
 };
 

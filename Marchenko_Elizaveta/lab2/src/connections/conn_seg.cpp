@@ -2,27 +2,39 @@
 #include <sys/shm.h>
 #include <fcntl.h>
 #include <cstring>
+#include <qguiapplication_platform.h>
+#include <sys/syslog.h>
+
 #include "../config.hpp"
 
 using namespace config;
 
-conn_seg::conn_seg(int fromPid, int toPid, bool isHost) {
+conn_seg::conn_seg(const int fromPid, const int toPid, const bool isHost) {
     _isHost = isHost;
 
-    int f = _isHost ? IPC_CREAT | O_EXCL | 0666 : 0666;
+    name = "/" + create_path(toPid, fromPid) + "seg";
 
-    std::string name = "/" + create_path(toPid, fromPid) + "seg";
-    key_t key = ftok(name.c_str(), f);
-    _shmid = shmget(key, 1024, f);
-    if (_shmid == -1)
-        throw "segment creation error";
+    if (isHost) {
+        _shmid = shmget(toPid, 1024, IPC_CREAT | O_EXCL | 0666);
+    }
+    else {
+        _shmid = shmget(toPid, 1024, 0666);
+    }
 
-    _segptr = shmat(_shmid, 0, 0);
-    if (_segptr == (void*)-1) {
+    if (_shmid == -1) {
+        syslog(LOG_ERR, "Could not get shared memory segment");
+        throw "Could not get shared memory segment";
+    }
+
+
+    _segptr = shmat(_shmid, nullptr, 0);
+    if (_segptr == reinterpret_cast<void *>(-1)) {
         if (_isHost)
             shmctl(_shmid, IPC_RMID, 0);
-        throw "segment attachment error";
+        syslog(LOG_ERR, "Could not attach to shared memory segment");
+        throw "Could not attach to shared memory segment";
     }
+    std::cerr<<"Create " << name << std::endl;
 }
 
 bool conn_seg::Read(std::string& msg) {
@@ -37,7 +49,7 @@ bool conn_seg::Read(std::string& msg) {
 
     // Теперь копируем массив в std::string
     msg = std::string(buffer);
-    //memcpy(&msg, _segptr, sizeof(msg));
+
     return true;
 }
 
@@ -52,5 +64,6 @@ bool conn_seg::Write(const std::string& msg) {
 conn_seg::~conn_seg() {
     shmdt(_segptr);
     if (_isHost)
-        shmctl(_shmid, IPC_RMID, 0);
+        shmctl(_shmid, IPC_RMID, nullptr);
+    //std::cerr<<"Destroy " << name << std::endl;
 }

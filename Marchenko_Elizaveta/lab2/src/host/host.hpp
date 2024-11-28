@@ -122,6 +122,8 @@ class Host {
                 number_varies_when_everyone_dead = 0;
             }
 
+            number_of_dead_clients = 0;
+
             bool game_continue = true;
             if (number_varies_when_everyone_dead == 2) {
                 syslog(LOG_INFO, "End of game");
